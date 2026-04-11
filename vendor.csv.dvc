@@ -1,0 +1,5 @@
+outs:
+- md5: fa8662b2c8da0e39bdc340a283582505
+  size: 400
+  hash: md5
+  path: vendor.csv
