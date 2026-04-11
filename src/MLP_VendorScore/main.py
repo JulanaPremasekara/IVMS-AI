@@ -4,6 +4,7 @@ import joblib
 import numpy as np
 from fastapi import FastAPI
 from pydantic import BaseModel
+from typing import List, Union
 
 # 1. DEFINE THE MODEL ARCHITECTURE
 # This must match exactly the structure you used during training.
@@ -43,33 +44,38 @@ class VendorInput(BaseModel):
 
 # 4. THE ENDPOINT
 @app.post("/predict")
-def predict_score(data: VendorInput):
-    # Step A: Convert the JSON input into a list for the scaler
-    raw_features = [[
-        data.status, 
-        data.delivery_delay, 
-        data.lead_time, 
-        data.is_weekend, 
-        data.damage_rate, 
-        data.fill_rate
-    ]]
-    
-    # Step B: Scale the features (Model expects scaled numbers)
-    scaled_features = f_scaler.transform(raw_features)
-    input_tensor = torch.tensor(scaled_features, dtype=torch.float32)
-    
-    # Step C: Get prediction from the model
-    with torch.no_grad():
-        prediction_scaled = model(input_tensor).numpy()
-        
-        # Step D: Un-scale the prediction back to 0-100 range
-        final_score = t_scaler.inverse_transform(prediction_scaled)
-    
-    # Return the result as a dictionary (FastAPI converts this to JSON)
-    return {
-        "vendor_score": round(float(final_score[0][0]), 2),
-        "status": "success"
-    }
+def predict_score(data: Union[VendorInput, List[VendorInput]]):
+    # Ensure data is always a list for processing
+    if not isinstance(data, list):
+        data = [data]
 
+    # 1. Extract and Scale Data
+    raw_inputs = [[
+        v.status, v.delivery_delay, v.lead_time,
+        v.is_weekend, v.damage_rate, v.fill_rate
+    ] for v in data]
+
+    scaled_inputs = f_scaler.transform(raw_inputs)
+    tensor_inputs = torch.tensor(scaled_inputs, dtype=torch.float32)
+
+    # 2. Get Predictions
+    with torch.no_grad():
+        prediction_scaled = model(tensor_inputs).numpy()
+        final_scores = t_scaler.inverse_transform(prediction_scaled)
+
+    # Convert scores to a flat list of floats
+    score_list = [round(float(s[0]), 2) for s in final_scores]
+
+    # 3. IDENTIFY THE BEST VENDOR
+    # Find the index of the highest score (e.g., Index 0, 1, or 2)
+    best_score = max(score_list)
+    best_index = score_list.index(best_score)
+
+    return {
+        "all_scores": score_list,
+        "best_vendor_index": best_index,
+        "best_vendor_score": best_score,
+        "recommendation": f"Vendor at index {best_index} is your best choice!"
+    }
 # TO RUN: Open your terminal and type: 
 # uvicorn main:app --reload
