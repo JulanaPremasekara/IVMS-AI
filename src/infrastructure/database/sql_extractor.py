@@ -4,9 +4,9 @@ from core.interfaces.extractor import Extractor
 
 class SQLEXTRACTOR(Extractor):
 
-    def __init__(self, database_connection):
+    def __init__(self, database_connection, source_name):
         self.database_connection = database_connection
-        
+        self.source_name = source_name
         # We define the queries here. 
         # Added the 'vendor_report' query based on your table screenshots.
         self._Query_Book = {
@@ -14,30 +14,47 @@ class SQLEXTRACTOR(Extractor):
             "orders": "SELECT order_id, customer_id, total FROM raw.orders",
             "products": "SELECT id, sku, price FROM inventory.products",
             "vendor_report": """
-                SELECT 
-                    v.id AS ID,
-                    v.address AS ADDRESS,
-                    v.payment_terms AS PAYMENT_TERM,
-                    v.status AS STATUS,
-                    v.total_orders AS TOTAL_ORDE,
-                    v.sku AS SKU_CODE,
-                    s.created_date AS ORDER_DAT,
-                    pr.total_received AS RECEIVED_QUANTITY,
-                    pr.total_damaged AS DAMAGE_QUANTITY,
-                    s.estimated_arrival AS EXPECTED_DELIVERY_DAT,
-                    pr.created_date AS RECIEVED_DATE
-                FROM vendors v
-                INNER JOIN shipments s ON v.id = s.vendor_id
-                INNER JOIN partial_receipts pr ON s.purchase_order_id = pr.previous_purchase_order_id
-            """
+                        SELECT 
+                            s.purchase_order_id AS ID,        -- The report ID is now the Order ID
+                            v.id AS VENDOR_ID,               -- Kept as a reference
+                            v.address AS ADDRESS,
+                            v.payment_terms AS PAYMENT_TERM,
+                            v.status AS STATUS,
+                            v.total_orders AS TOTAL_ORDE,
+                            v.sku AS SKU_CODE,
+                            s.created_date AS ORDER_DAT,
+                            pr.total_received AS RECEIVED_QUANTITY,
+                            pr.total_damaged AS DAMAGE_QUANTITY,
+                            s.estimated_arrival AS EXPECTED_DELIVERY_DAT,
+                            pr.created_date AS RECIEVED_DATE
+                        FROM vendors v
+                        INNER JOIN shipments s ON v.id = s.vendor_id
+                        INNER JOIN partial_receipts pr ON s.purchase_order_id = pr.previous_purchase_order_id
+                        ORDER BY s.purchase_order_id ASC;
+                    """,
+                "inventory_report": """
+                        SELECT 
+                            i.id AS INVENTORY_ID,
+                            i.sku_code AS SKU_CODE,
+                            i.warehouse_location AS WAREHOUSE_LOCATION,
+                            i.is_active AS IS_ACTIVE,
+                            i.unit_price AS UNIT_PRICE,
+                            i.initial_stock AS INITIAL_STOCK,
+                            i.reorder_threshold AS REORDER_THRESHOLD,
+                            c.name AS CATEGORY_NAME
+
+                        FROM products i
+                        INNER JOIN categories c ON i.category_id = c.id
+                        ORDER BY i.id ASC;
+                    """
         }
 
     def extract(self):
         # 1. Get the query based on the source name
-        query = self._Query_Book.get(self.database_connection.source_name)
+        query = self._Query_Book.get(self.source_name)
         
         if not query:
-            raise ValueError(f"No query found for source: {self.database_connection.source_name}")
+            raise ValueError(f"No query found for source: {self.source_name}")
 
         try:
             # 2. Use the database_connection (assuming it holds the engine or URL)

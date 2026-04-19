@@ -16,12 +16,11 @@ def main():
 
     
     db_conn = MySQLConnection(
-        uri=Settings.DATABASE_URL, 
-        source_name="vendor_report"
+        uri=Settings.DB_URL, 
     )
     
-    vendor_extractor = SQLEXTRACTOR(database_connection=db_conn)
-    inventory_extractor = DummyInventoryExtractor()
+    vendor_extractor = SQLEXTRACTOR(database_connection=db_conn, source_name="vendor_report")
+    inventory_extractor = SQLEXTRACTOR(database_connection=db_conn, source_name="inventory_report")
 
     vendor_use_case = RunETLUseCase(
         extractor=vendor_extractor,

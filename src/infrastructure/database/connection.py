@@ -5,13 +5,12 @@ class MySQLConnection:
     """
     Manages the lifecycle of a MySQL database connection using SQLAlchemy.
     """
-    def __init__(self, uri: str, source_name: str):
+    def __init__(self, uri: str):
         """
         :param uri: The full database URL (mysql+pymysql://user:pass@host/db)
         :param source_name: The key used by the extractor to find the right query
         """
         self.uri = uri
-        self.source_name = source_name
         self._engine = None
 
     @property
