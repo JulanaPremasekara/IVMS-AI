@@ -1,0 +1,19 @@
+INVENTORY_ID,SKU_CODE,WAREHOUSE_LOCATION,IS_ACTIVE,UNIT_PRICE,INITIAL_STOCK,REORDER_THRESHOLD,CATEGORY_NAME
+17,SKU002,B2,b'\x01',1500.0,0,25,Wearables
+18,INV-2EE67A51,Kandy,b'\x01',750.0,0,25,Electronics
+19,INV-A5591D36,Galle,b'\x00',145.0,0,10,Beauty & Personal Care
+20,SKU-F9789009,Moratuwa,b'\x01',450.0,3,25,Electronics
+21,SKU-90EDD9B4,Kiribathgoda,b'\x01',75.0,40,10,Garden Tools
+22,SKU-1155D87C,Malabe,b'\x01',150.0,0,10,Baby Products
+23,SKU-21916E6B,Colombo,b'\x01',350.0,-12,25,Electronics
+24,SKU-372487EF,Kandy,b'\x01',120.0,100,10,Electronics
+25,SKU-EA760B79,Kandy,b'\x01',240.0,23,10,Electronics
+26,SKU-9F5C6EFE,Kottawa,b'\x01',150.0,5,10,Electronics
+27,SKU-4480CE99,Malabe,b'\x00',150.0,0,10,Electronics
+28,SKU-F0287E0C,Malabe,b'\x01',120.0,23,10,Wearables
+29,SKU-AFDF4F5F,Malabe,b'\x01',120.0,23,10,Wearables
+30,SKU-007BED9F,Malabe,b'\x01',120.0,23,10,Wearables
+31,SKU-895F8951,Malabe,b'\x01',120.0,23,10,Wearables
+32,SKU-D55C330C,Malabe,b'\x01',120.0,23,10,Wearables
+33,SKU-EBF5FDFE,Malabe,b'\x01',120.0,23,10,Wearables
+34,SKU-1DA01609,Malabe,b'\x01',125.0,120,20,Beauty & Personal Care
