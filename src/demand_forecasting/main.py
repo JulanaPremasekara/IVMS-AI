@@ -5,7 +5,7 @@ import pandas as pd
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 app = FastAPI(title="Demand Forecasting API")
 
@@ -36,6 +36,9 @@ target_min = joblib.load(target_min_path) if target_min_path.exists() else 0.0
 target_max = joblib.load(target_max_path) if target_max_path.exists() else 1.0
 
 
+# -------------------------------
+# Validation Error Handler
+# -------------------------------
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
@@ -47,24 +50,49 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 
+# -------------------------------
+# Input Validation Model
+# -------------------------------
 class InputData(BaseModel):
-    UNIT_PRICE: float
-    INITIAL_STOCK: float
-    REORDER_THRESHOLD: float
-    IS_WEEKEND: int
-    MONTH: int
-    CAT_Digital_Devices: int
-    CAT_Electronics: int
-    CAT_Home_appliances: int
-    CAT_Kitchen_Appliances: int
-    CAT_Personal_Care: int
+    UNIT_PRICE: float = Field(..., gt=0, description="Must be greater than 0")
+    INITIAL_STOCK: float = Field(..., ge=0, description="Cannot be negative")
+    REORDER_THRESHOLD: float = Field(..., ge=0, description="Cannot be negative")
+
+    IS_WEEKEND: int = Field(..., ge=0, le=1, description="Only 0 or 1 allowed")
+    MONTH: int = Field(..., ge=1, le=12, description="Month must be between 1 and 12")
+
+    CAT_Digital_Devices: int = Field(..., ge=0, le=1)
+    CAT_Electronics: int = Field(..., ge=0, le=1)
+    CAT_Home_appliances: int = Field(..., ge=0, le=1)
+    CAT_Kitchen_Appliances: int = Field(..., ge=0, le=1)
+    CAT_Personal_Care: int = Field(..., ge=0, le=1)
+
+    # Extra simple validation
+    @field_validator(
+        "CAT_Digital_Devices",
+        "CAT_Electronics",
+        "CAT_Home_appliances",
+        "CAT_Kitchen_Appliances",
+        "CAT_Personal_Care"
+    )
+    @classmethod
+    def validate_category_values(cls, value):
+        if value not in [0, 1]:
+            raise ValueError("Category values must be only 0 or 1")
+        return value
 
 
+# -------------------------------
+# Home Route
+# -------------------------------
 @app.get("/")
 def home():
     return {"message": "LightGBM Demand Forecasting API is running!"}
 
 
+# -------------------------------
+# Prediction Route
+# -------------------------------
 @app.post("/predict")
 def predict(data: InputData):
     try:
@@ -87,6 +115,7 @@ def predict(data: InputData):
         prediction = model.predict(input_df)
         predicted_value = float(prediction[0])
 
+        # Demand Label
         if predicted_value < 0.3:
             demand_label = "Low Demand"
         elif predicted_value < 0.6:
@@ -99,13 +128,18 @@ def predict(data: InputData):
             "interpretation": demand_label
         }
 
+        # Confidence Range
         if model_rmse is not None:
             lower_bound = max(float(target_min), predicted_value - float(model_rmse))
             upper_bound = min(float(target_max), predicted_value + float(model_rmse))
 
             target_range = float(target_max) - float(target_min)
+
             if target_range > 0:
-                confidence_percent = max(0.0, 100 * (1 - (float(model_rmse) / target_range)))
+                confidence_percent = max(
+                    0.0,
+                    100 * (1 - (float(model_rmse) / target_range))
+                )
             else:
                 confidence_percent = 100.0
 
@@ -120,6 +154,7 @@ def predict(data: InputData):
                 "lower": round(lower_bound, 2),
                 "upper": round(upper_bound, 2)
             }
+
             response["estimated_confidence"] = {
                 "score_percent": round(confidence_percent, 2),
                 "level": confidence_level
@@ -130,7 +165,6 @@ def predict(data: InputData):
     except Exception as e:
         return JSONResponse(
             status_code=500,
-            
             content={
                 "error": "Prediction failed",
                 "details": str(e)
