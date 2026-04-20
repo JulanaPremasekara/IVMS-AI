@@ -1,0 +1,27 @@
+# Configuration file for ML project
+# This file contains all parameters for the machine learning pipeline
+
+# Model parameters
+model:
+  type: "MLPRegressor"  # Type of model to use
+  hidden_layer_sizes: [50]  # Number of neurons in hidden layers
+  max_iter: 1000  # Maximum number of iterations
+  random_state: 42  # Random seed for reproducibility
+
+# Training parameters
+training:
+  test_size: 0.2  # Fraction of data to use for testing
+  random_state: 42  # Random seed for train/test split
+
+# Data parameters
+data:
+  random_seed: 42  # Random seed for data generation
+  # File paths (update these to your actual file paths)
+  inventory_file: "inventory.csv"
+  vendor_file: "vendor.csv"
+  model_save_path: "model.pkl"
+
+# MLflow settings
+mlflow:
+  experiment_name: "Vendor_Score_Prediction"  # Name of the MLflow experiment
+  tracking_uri: "http://localhost:5000"  # URI for MLflow tracking server
